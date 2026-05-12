@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>恋爱大师 · AI 感情分析</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --pink: #f472b6; --pink-light: #fce7f3; --rose: #e11d48;
+      --purple: #a855f7; --purple-light: #f3e8ff;
+      --text: #1e1b2e; --muted: #6b7280; --bg: #fff9fb;
+      --card: #ffffff; --border: #fce7f3;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    header { background: linear-gradient(135deg, #fdf2f8 0%, #f3e8ff 100%); border-bottom: 1px solid var(--border); padding: 36px 24px 30px; text-align: center; }
+    .badge { display: inline-block; background: linear-gradient(90deg, var(--pink), var(--purple)); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; padding: 4px 14px; border-radius: 20px; margin-bottom: 14px; }
+    header h1 { font-size: 34px; font-weight: 800; background: linear-gradient(135deg, var(--rose), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 10px; }
+    header p { color: var(--muted); font-size: 14px; line-height: 1.7; }
+    main { max-width: 760px; margin: 0 auto; padding: 32px 20px 60px; }
+    .mode-tabs { display: flex; gap: 10px; margin-bottom: 22px; }
+    .mode-tab { flex: 1; padding: 14px 12px; border: 2px solid var(--border); border-radius: 14px; background: var(--card); cursor: pointer; text-align: center; transition: all .2s; font-size: 14px; font-weight: 500; color: var(--muted); }
+    .mode-tab:hover { border-color: var(--pink); color: var(--pink); }
+    .mode-tab.active { border-color: var(--pink); background: var(--pink-light); color: var(--rose); font-weight: 700; }
+    .tab-icon { font-size: 22px; display: block; margin-bottom: 5px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 26px; box-shadow: 0 4px 20px rgba(244,114,182,.08); margin-bottom: 18px; }
+    .card-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, var(--pink), var(--purple)); flex-shrink: 0; }
+    .form-group { margin-bottom: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 7px; }
+    textarea, select { width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 11px 14px; font-size: 14px; font-family: inherit; color: var(--text); background: #fff; transition: border-color .2s; outline: none; }
+    textarea { min-height: 150px; resize: vertical; line-height: 1.7; }
+    textarea:focus, select:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(244,114,182,.12); }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { padding: 6px 14px; border: 1.5px solid var(--border); border-radius: 20px; font-size: 13px; cursor: pointer; transition: all .18s; color: var(--muted); background: #fff; user-select: none; }
+    .chip:hover { border-color: var(--pink); color: var(--pink); }
+    .chip.on { border-color: var(--pink); background: var(--pink-light); color: var(--rose); font-weight: 600; }
+    .tips { background: var(--purple-light); border: 1px solid #e9d5ff; border-radius: 12px; padding: 13px 16px; font-size: 13px; color: #7c3aed; line-height: 1.7; margin-bottom: 20px; }
+    .btn-analyze { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--pink), var(--purple)); color: #fff; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .1s; letter-spacing: .5px; }
+    .btn-analyze:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-analyze:active { transform: translateY(0); }
+    .btn-analyze:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .error { display: none; background: #fff1f2; border: 1.5px solid #fecdd3; border-radius: 12px; padding: 14px 16px; font-size: 14px; color: #be123c; margin-top: 14px; }
+    .loading { display: none; text-align: center; padding: 48px 20px; }
+    .heart-anim { font-size: 40px; display: block; margin-bottom: 16px; animation: beat 1s ease-in-out infinite; }
+    @keyframes beat { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
+    .loading p { color: var(--muted); font-size: 14px; }
+    #result { display: none; }
+    .result-header { background: linear-gradient(135deg, #fdf2f8, #f3e8ff); border: 1px solid var(--border); border-radius: 20px; padding: 26px; margin-bottom: 16px; text-align: center; }
+    .result-header h2 { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--rose), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 6px; }
+    .result-body { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 26px; box-shadow: 0 2px 12px rgba(244,114,182,.06); margin-bottom: 16px; }
+    .result-body h2 { font-size: 15px; font-weight: 700; color: var(--rose); margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .result-body h2:first-child { margin-top: 0; }
+    .result-body p { font-size: 14px; line-height: 1.85; color: var(--text); margin-bottom: 8px; }
+    .result-body ul { padding-left: 20px; margin-bottom: 8px; }
+    .result-body li { font-size: 14px; line-height: 1.85; color: var(--text); margin-bottom: 4px; }
+    .result-body strong { color: var(--rose); }
+    .result-actions { display: flex; gap: 10px; margin-top: 4px; }
+    .btn-outline { flex: 1; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px; background: #fff; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all .18s; }
+    .btn-outline:hover { border-color: var(--pink); color: var(--pink); }
+    footer { text-align: center; padding: 24px; font-size: 12px; color: #d1d5db; }
+    .input-tabs { display: flex; gap: 0; margin-bottom: 18px; border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .input-tab { flex: 1; padding: 9px 12px; font-size: 13px; font-weight: 500; color: var(--muted); background: #fff; cursor: pointer; text-align: center; transition: all .18s; border: none; }
+    .input-tab + .input-tab { border-left: 1.5px solid var(--border); }
+    .input-tab:hover { color: var(--pink); background: var(--pink-light); }
+    .input-tab.active { background: var(--pink-light); color: var(--rose); font-weight: 700; }
+    .drop-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 28px 20px; text-align: center; cursor: pointer; transition: all .2s; background: #fff; position: relative; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--pink); background: var(--pink-light); }
+    .drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: none; padding: 0; }
+    .drop-icon { font-size: 32px; display: block; margin-bottom: 8px; }
+    .drop-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+    .drop-sub { font-size: 12px; color: var(--muted); line-height: 1.6; }
+    .drop-sub span { display: inline-block; background: #f3f4f6; border-radius: 5px; padding: 1px 7px; margin: 2px 2px; font-size: 11px; font-weight: 600; color: #374151; }
+    .file-preview { display: none; align-items: center; gap: 12px; background: var(--pink-light); border: 1.5px solid var(--pink); border-radius: 12px; padding: 11px 14px; margin-top: 10px; }
+    .file-preview.show { display: flex; }
+    .file-icon { font-size: 26px; flex-shrink: 0; }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .file-remove { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #fca5a5; background: #fff; color: #ef4444; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .file-remove:hover { background: #fee2e2; }
+    .parse-status { display: none; font-size: 12px; color: var(--purple); margin-top: 8px; text-align: center; }
+    .parse-status.show { display: block; }
+    .img-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .img-thumb { position: relative; width: 84px; height: 84px; border-radius: 10px; overflow: hidden; border: 1.5px solid var(--border); flex-shrink: 0; background: #f9fafb; }
+    .img-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .img-thumb-remove { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; font-size: 11px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s; line-height: 1; }
+    .img-thumb-remove:hover { background: #ef4444; }
+    .img-count-badge { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .upload-divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; color: var(--muted); font-size: 12px; }
+    .upload-divider::before, .upload-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .supplement-area textarea { min-height: 80px; }
+    @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } header h1 { font-size: 28px; } .card { padding: 18px; } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">AI POWERED · 恋爱大师</div>
+  <h1>💗 恋爱大师</h1>
+  <p>上传聊天记录 · 描述感情困惑 · 获得深度分析<br/>帮你看清关系本质，做出对自己最好的选择</p>
+</header>
+
+<main>
+
+  <div class="mode-tabs">
+    <div class="mode-tab active" id="tab-chat" onclick="switchMode('chat')">
+      <span class="tab-icon">💬</span>聊天记录
+    </div>
+    <div class="mode-tab" id="tab-desc" onclick="switchMode('desc')">
+      <span class="tab-icon">✍️</span>描述感情情况
+    </div>
+  </div>
+
+  <div class="tips">
+    💡 <strong>隐私提示：</strong>你的内容只会发送给 AI 进行分析，不会被储存。建议删除真实姓名等敏感信息后再粘贴。
+  </div>
+
+  <div class="card">
+
+    <!-- Chat mode -->
+    <div id="pane-chat">
+      <div class="card-title"><span class="dot"></span>聊天记录</div>
+      <div class="input-tabs">
+        <div class="input-tab active" id="itab-paste" onclick="switchInputTab('paste')">✏️ 直接粘贴</div>
+        <div class="input-tab" id="itab-upload" onclick="switchInputTab('upload')">📎 上传文件 / 图片</div>
+      </div>
+
+      <div id="ipane-paste">
+        <div class="form-group" style="margin-bottom:0">
+          <label>聊天记录内容（越完整越准确）</label>
+          <textarea id="chatText" placeholder="把微信 / 短信聊天记录复制粘贴到这里。可以是几条消息，也可以是很长的记录。"></textarea>
+        </div>
+      </div>
+
+      <div id="ipane-upload" style="display:none">
+        <div class="form-group">
+          <label>📄 上传文件（PDF / Word / Excel / CSV / TXT）</label>
+          <div class="drop-zone" id="dropZone"
+               ondragover="onDragOver(event,'dropZone')"
+               ondragleave="onDragLeave(event,'dropZone')"
+               ondrop="onFileDrop(event)">
+            <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="onFileChange(event)" />
+            <span class="drop-icon">📂</span>
+            <div class="drop-title">点击选择文件，或拖拽到此处</div>
+            <div class="drop-sub"><span>PDF</span><span>Word</span><span>Excel</span><span>CSV</span><span>TXT</span> · 最大 20MB</div>
+          </div>
+          <div class="file-preview" id="filePreview">
+            <span class="file-icon" id="fileIcon">📄</span>
+            <div class="file-info">
+              <div class="file-name" id="fileName"></div>
+              <div class="file-meta" id="fileMeta"></div>
+            </div>
+            <button class="file-remove" onclick="removeFile()" title="移除文件">✕</button>
+          </div>
+          <div class="parse-status" id="parseStatus">⏳ 正在解析文件内容…</div>
+        </div>
+
+        <div class="upload-divider">或</div>
+
+        <div class="form-group">
+          <label>🖼️ 上传截图 / 图片（支持多张，JPG / PNG / WebP / GIF）</label>
+          <div class="drop-zone" id="imgDropZone"
+               ondragover="onDragOver(event,'imgDropZone')"
+               ondragleave="onDragLeave(event,'imgDropZone')"
+               ondrop="onImgDrop(event)">
+            <input type="file" id="imgInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple onchange="onImgChange(event)" />
+            <span class="drop-icon">🖼️</span>
+            <div class="drop-title">点击选择图片，或拖拽到此处</div>
+            <div class="drop-sub">可多张上传 · 单张最大 5MB · 最多 6 张</div>
+          </div>
+          <div class="img-list" id="imgList"></div>
+        </div>
+
+        <div class="upload-divider">补充说明</div>
+        <div class="supplement-area">
+          <textarea id="uploadSupText" placeholder="在这里补充文字说明（可选）：比如这段对话的背景、你当时的感受、有什么特别想问的……"></textarea>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:16px;margin-bottom:0">
+        <div>
+          <label>你的角色</label>
+          <select id="myRole">
+            <option value="female">我是女生</option>
+            <option value="male">我是男生</option>
+          </select>
+        </div>
+        <div>
+          <label>关系阶段</label>
+          <select id="stage">
+            <option value="暧昧/追求阶段">暧昧 / 追求阶段</option>
+            <option value="正式恋爱中">正式恋爱中</option>
+            <option value="分手/冷战中">分手 / 冷战中</option>
+            <option value="想复合">想复合</option>
+            <option value="婚姻关系">婚姻关系</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Describe mode -->
+    <div id="pane-desc" style="display:none">
+      <div class="card-title"><span class="dot"></span>描述你的感情情况</div>
+      <div class="form-group">
+        <label>选择你的困惑场景（可多选）</label>
+        <div class="chips" id="chips">
+          <div class="chip" onclick="toggleChip(this)">他是不是喜欢我</div>
+          <div class="chip" onclick="toggleChip(this)">要不要主动</div>
+          <div class="chip" onclick="toggleChip(this)">他突然冷淡了</div>
+          <div class="chip" onclick="toggleChip(this)">分手后要不要复合</div>
+          <div class="chip" onclick="toggleChip(this)">他值不值得继续</div>
+          <div class="chip" onclick="toggleChip(this)">我是不是付出太多</div>
+          <div class="chip" onclick="toggleChip(this)">他有没有在骗我</div>
+          <div class="chip" onclick="toggleChip(this)">异地恋能不能维持</div>
+          <div class="chip" onclick="toggleChip(this)">要不要提分手</div>
+          <div class="chip" onclick="toggleChip(this)">他的行为什么意思</div>
+          <div class="chip" onclick="toggleChip(this)">如何挽回</div>
+          <div class="chip" onclick="toggleChip(this)">其他困惑</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>详细描述你的情况</label>
+        <textarea id="descText" placeholder="尽量详细描述：你们是什么关系、认识多久、发生了什么事、他/她的具体行为是什么、你现在的感受是什么……越具体，分析越准确。"></textarea>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <div>
+          <label>你的性别</label>
+          <select id="myGender">
+            <option value="女生">女生</option>
+            <option value="男生">男生</option>
+          </select>
+        </div>
+        <div>
+          <label>对方性别</label>
+          <select id="theirGender">
+            <option value="男生">男生</option>
+            <option value="女生">女生</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <button class="btn-analyze" id="analyzeBtn" onclick="doAnalyze()">💗 开始分析</button>
+  <div class="error" id="errBox"></div>
+
+  <div class="loading" id="loading">
+    <span class="heart-anim">💗</span>
+    <p>恋爱大师正在深度分析中…</p>
+    <p style="margin-top:6px;font-size:12px;color:#9ca3af">通常需要 15–30 秒，请耐心等待</p>
+  </div>
+
+  <div id="result">
+    <div class="result-header">
+      <h2>💗 分析报告</h2>
+      <p style="font-size:13px;color:var(--muted);margin-top:4px">基于你提供的内容生成 · 仅供参考</p>
+    </div>
+    <div class="result-body" id="resultBody"></div>
+    <div class="result-actions">
+      <button class="btn-outline" onclick="copyReport()">📋 复制报告</button>
+      <button class="btn-outline" onclick="resetAll()">🔄 重新分析</button>
+    </div>
+  </div>
+
+</main>
+
+<footer>恋爱大师 · AI 感情分析工具 · 最终决定权永远在你自己</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+  // ── State ──
+  let mode = 'chat';
+  let inputTab = 'paste';
+  let parsedFileText = '';
+  let uploadedImages = [];
+
+  // ── Mode / tab switches ──
+  function switchMode(m) {
+    mode = m;
+    document.getElementById('tab-chat').classList.toggle('active', m === 'chat');
+    document.getElementById('tab-desc').classList.toggle('active', m === 'desc');
+    document.getElementById('pane-chat').style.display = m === 'chat' ? 'block' : 'none';
+    document.getElementById('pane-desc').style.display = m === 'desc' ? 'block' : 'none';
+  }
+  function switchInputTab(t) {
+    inputTab = t;
+    document.getElementById('itab-paste').classList.toggle('active', t === 'paste');
+    document.getElementById('itab-upload').classList.toggle('active', t === 'upload');
+    document.getElementById('ipane-paste').style.display = t === 'paste' ? 'block' : 'none';
+    document.getElementById('ipane-upload').style.display = t === 'upload' ? 'block' : 'none';
+  }
+
+  // ── Drag & drop ──
+  function onDragOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('drag-over'); }
+  function onDragLeave(e, id) { document.getElementById(id).classList.remove('drag-over'); }
+  function onFileDrop(e) { e.preventDefault(); document.getElementById('dropZone').classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }
+  function onImgDrop(e) { e.preventDefault(); document.getElementById('imgDropZone').classList.remove('drag-over'); Array.from(e.dataTransfer.files).forEach(f => handleImage(f)); }
+  function onFileChange(e) { const f = e.target.files[0]; if (f) handleFile(f); }
+
+  // ── File handling ──
+  function fileTypeIcon(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    if (ext === 'pdf') return '📕';
+    if (['doc','docx'].includes(ext)) return '📘';
+    if (['xls','xlsx'].includes(ext)) return '📗';
+    if (ext === 'csv') return '📊';
+    return '📄';
+  }
+  async function handleFile(file) {
+    if (file.size > 20 * 1024 * 1024) { showErr('文件过大，请上传 20MB 以内的文件'); return; }
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['pdf','doc','docx','xls','xlsx','csv','txt'].includes(ext)) { showErr('不支持该文件格式'); return; }
+    document.getElementById('fileIcon').textContent = fileTypeIcon(file.name);
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileMeta').textContent = (file.size/1024).toFixed(1) + ' KB · 解析中…';
+    document.getElementById('filePreview').classList.add('show');
+    document.getElementById('parseStatus').classList.add('show');
+    parsedFileText = ''; hideErr();
+    try {
+      if (ext === 'pdf') parsedFileText = await parsePDF(file);
+      else if (['doc','docx'].includes(ext)) parsedFileText = await parseWord(file);
+      else if (['xls','xlsx'].includes(ext)) parsedFileText = await parseExcel(file);
+      else parsedFileText = await parseTextFile(file);
+      const n = parsedFileText.length;
+      document.getElementById('fileMeta').textContent = (file.size/1024).toFixed(1) + ' KB · 已提取 ' + n.toLocaleString() + ' 字';
+      document.getElementById('parseStatus').classList.remove('show');
+      if (n === 0) { showErr('文件内容为空或无法提取文字'); parsedFileText = ''; }
+    } catch(err) {
+      document.getElementById('parseStatus').classList.remove('show');
+      showErr('文件解析失败：' + err.message);
+      parsedFileText = '';
+    }
+  }
+  function removeFile() {
+    parsedFileText = '';
+    document.getElementById('filePreview').classList.remove('show');
+    document.getElementById('parseStatus').classList.remove('show');
+    document.getElementById('fileInput').value = '';
+    hideErr();
+  }
+
+  // ── Image handling ──
+  function onImgChange(e) { Array.from(e.target.files).forEach(f => handleImage(f)); e.target.value = ''; }
+  async function handleImage(file) {
+    if (!file.type.startsWith('image/')) { showErr('请上传图片文件'); return; }
+    if (file.size > 5 * 1024 * 1024) { showErr('图片超过 5MB，请压缩后再上传'); return; }
+    if (uploadedImages.length >= 6) { showErr('最多上传 6 张图片'); return; }
+    const dataUrl = await readAsDataURL(file);
+    const base64 = dataUrl.split(',')[1];
+    uploadedImages.push({ name: file.name, dataUrl, base64, mimeType: file.type });
+    renderImgList(); hideErr();
+  }
+  function readAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = e => resolve(e.target.result);
+      r.onerror = () => reject(new Error('图片读取失败'));
+      r.readAsDataURL(file);
+    });
+  }
+  function renderImgList() {
+    const list = document.getElementById('imgList');
+    if (!uploadedImages.length) { list.innerHTML = ''; return; }
+    list.innerHTML = uploadedImages.map((img, i) => `
+      <div class="img-thumb">
+        <img src="${img.dataUrl}" alt="${escAttr(img.name)}" />
+        <button class="img-thumb-remove" onclick="removeImage(${i})" title="移除">✕</button>
+      </div>
+    `).join('') + `<div class="img-count-badge" style="width:100%">${uploadedImages.length} 张图片已添加</div>`;
+  }
+  function removeImage(idx) { uploadedImages.splice(idx, 1); renderImgList(); }
+  function clearImages() { uploadedImages = []; renderImgList(); }
+
+  // ── File parsers ──
+  async function parsePDF(file) {
+    const lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+    if (!lib) throw new Error('PDF 解析库未加载');
+    lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const buf = await file.arrayBuffer();
+    const pdf = await lib.getDocument({ data: buf }).promise;
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(it => it.str).join(' ') + '\n';
+    }
+    return text.trim();
+  }
+  async function parseWord(file) {
+    if (!window.mammoth) throw new Error('Word 解析库未加载');
+    const buf = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: buf });
+    return result.value.trim();
+  }
+  async function parseExcel(file) {
+    if (!window.XLSX) throw new Error('Excel 解析库未加载');
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    let text = '';
+    wb.SheetNames.forEach(name => {
+      const csv = XLSX.utils.sheet_to_csv(wb.Sheets[name]);
+      if (csv.trim()) text += `【${name}】\n${csv}\n\n`;
+    });
+    return text.trim();
+  }
+  async function parseTextFile(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = e => resolve(e.target.result || '');
+      r.onerror = () => reject(new Error('文件读取失败'));
+      r.readAsText(file, 'UTF-8');
+    });
+  }
+
+  // ── Chips ──
+  function toggleChip(el) { el.classList.toggle('on'); }
+  function getScenes() { return Array.from(document.querySelectorAll('.chip.on')).map(c => c.textContent).join('、'); }
+
+  // ── Prompt templates ──
+  const SYSTEM = `你是一位经验丰富、洞察力极强的恋爱大师。你的分析风格：直接说真话，不回避问题；有温度，不冷漠评判；有证据，结论有据可查；给出可操作的建议。如果用户提供了图片（聊天截图等），请仔细阅读图片中的文字内容，将其作为分析依据。`;
+
+  const TPL_CHAT = `
+请你以恋爱大师的视角进行深度分析，按以下结构输出（每个标题单独一行，用 ## 开头）：
+
+## 一、关系现状判断
+简要描述这段关系目前的状态和核心问题。
+
+## 二、TA 的人格底色
+分析对方的核心性格特质、依恋类型、行为模式，要有具体内容作为证据支撑。
+
+## 三、关系动力分析
+分析双方的投入程度是否对等、权力结构如何、存在哪些结构性问题。
+
+## 四、风险评估
+综合评估这段关系的风险等级（低风险 / 中等风险 / 高风险 / 极高风险），并说明主要风险点。
+
+## 五、行动建议
+给出 3–5 条具体、可操作的建议，直接告诉她该怎么做，不要说废话。
+
+## 六、恋爱大师想对你说
+用温暖但直接的语气说一段真心话，像一个真正关心她的朋友，不说教。`;
+
+  const TPL_DESC = `
+请你以恋爱大师的视角进行深度分析，按以下结构输出（每个标题单独一行，用 ## 开头）：
+
+## 一、情况解读
+用你的视角重新解读这个情况，说出她可能没意识到的关键点。
+
+## 二、对方行为解码
+分析对方行为背后的真实动机和心理状态。
+
+## 三、她在这段关系中的位置
+客观评估她目前在这段关系中的处境，是否对等，是否健康。
+
+## 四、风险提示
+指出这个情况中最需要警惕的 1–3 个信号。
+
+## 五、行动建议
+给出 3–5 条具体、可操作的建议，直接告诉她该怎么做，不要说废话。
+
+## 六、恋爱大师想对你说
+用温暖但直接的语气说一段真心话，像一个真正关心她的朋友，不说教。`;
+
+  function buildPrompt() {
+    if (mode === 'chat') {
+      const role = document.getElementById('myRole').value;
+      const stage = document.getElementById('stage').value;
+      const prefix = `以下是用户提供的聊天记录。用户是${role}，目前处于「${stage}」阶段。`;
+      if (inputTab === 'upload') {
+        const supText = document.getElementById('uploadSupText').value.trim();
+        const parts = [];
+        if (parsedFileText) parts.push(`【聊天记录文件内容】\n${parsedFileText}`);
+        if (supText) parts.push(`【补充说明】\n${supText}`);
+        if (uploadedImages.length > 0 && parts.length === 0) parts.push('（用户上传了聊天截图，请根据图片中的聊天内容进行分析）');
+        return { userText: `${prefix}\n\n${parts.join('\n\n')}${TPL_CHAT}`, images: uploadedImages };
+      } else {
+        const text = document.getElementById('chatText').value.trim();
+        return { userText: `${prefix}\n\n【聊天记录】\n${text}${TPL_CHAT}`, images: [] };
+      }
+    } else {
+      const text = document.getElementById('descText').value.trim();
+      const scenes = getScenes();
+      const myG = document.getElementById('myGender').value;
+      const theirG = document.getElementById('theirGender').value;
+      return { userText: `用户是${myG}，对方是${theirG}。困惑场景：${scenes || '感情困惑'}。\n\n【用户描述的情况】\n${text}${TPL_DESC}`, images: [] };
+    }
+  }
+
+  // ── Call backend API ──
+  async function callBackend(userText, images) {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system: SYSTEM, userText, images })
+    });
+    if (!res.ok) {
+      let msg = `服务器错误 (${res.status})`;
+      try { const d = await res.json(); msg = d.error || msg; } catch(_) {}
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    return data.content;
+  }
+
+  // ── Main analyze ──
+  async function doAnalyze() {
+    if (mode === 'chat') {
+      if (inputTab === 'upload') {
+        const supText = document.getElementById('uploadSupText').value.trim();
+        if (!parsedFileText && uploadedImages.length === 0 && !supText) {
+          showErr('请上传文件或图片，或在补充说明中输入内容'); return;
+        }
+      } else {
+        if (!document.getElementById('chatText').value.trim()) { showErr('请粘贴聊天记录内容'); return; }
+      }
+    } else {
+      if (!document.getElementById('descText').value.trim()) { showErr('请描述你的感情情况'); return; }
+    }
+
+    const { userText, images } = buildPrompt();
+    hideErr();
+    document.getElementById('analyzeBtn').disabled = true;
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('result').style.display = 'none';
+
+    try {
+      const text = await callBackend(userText, images);
+      document.getElementById('resultBody').innerHTML = md2html(text);
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch(e) {
+      showErr('分析失败：' + e.message + '。请稍后重试。');
+    } finally {
+      document.getElementById('analyzeBtn').disabled = false;
+      document.getElementById('loading').style.display = 'none';
+    }
+  }
+
+  // ── Markdown → HTML ──
+  function md2html(text) {
+    const lines = text.split('\n');
+    let html = '', inUl = false;
+    for (const line of lines) {
+      if (/^## /.test(line)) { if (inUl) { html += '</ul>'; inUl = false; } html += `<h2>${esc(line.replace(/^## /,''))}</h2>`; continue; }
+      if (/^### /.test(line)) { if (inUl) { html += '</ul>'; inUl = false; } html += `<h3 style="font-size:14px;font-weight:700;color:#7c3aed;margin:12px 0 6px">${esc(line.replace(/^### /,''))}</h3>`; continue; }
+      if (/^[-*] /.test(line) || /^\d+\. /.test(line)) { if (!inUl) { html += '<ul>'; inUl = true; } html += `<li>${inlineFormat(line.replace(/^[-*] /,'').replace(/^\d+\. /,''))}</li>`; continue; }
+      if (line.trim() === '') { if (inUl) { html += '</ul>'; inUl = false; } continue; }
+      if (inUl) { html += '</ul>'; inUl = false; }
+      html += `<p>${inlineFormat(line)}</p>`;
+    }
+    if (inUl) html += '</ul>';
+    return html;
+  }
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function escAttr(s) { return s.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function inlineFormat(s) { return esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>'); }
+
+  // ── Helpers ──
+  function showErr(msg) { const b = document.getElementById('errBox'); b.textContent = '⚠️ ' + msg; b.style.display = 'block'; }
+  function hideErr() { document.getElementById('errBox').style.display = 'none'; }
+  function copyReport() {
+    const text = document.getElementById('resultBody').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = event.currentTarget; btn.textContent = '✅ 已复制';
+      setTimeout(() => btn.textContent = '📋 复制报告', 2000);
+    }).catch(() => showErr('复制失败，请手动选中文字复制'));
+  }
+  function resetAll() {
+    document.getElementById('chatText').value = '';
+    document.getElementById('descText').value = '';
+    document.getElementById('uploadSupText').value = '';
+    document.querySelectorAll('.chip.on').forEach(c => c.classList.remove('on'));
+    document.getElementById('result').style.display = 'none';
+    removeFile(); clearImages(); hideErr();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>
